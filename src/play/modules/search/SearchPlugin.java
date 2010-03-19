@@ -6,6 +6,11 @@ import play.exceptions.UnexpectedException;
 public class SearchPlugin extends PlayPlugin {
     
     @Override
+	public void onApplicationStart() {
+    	Search.init();
+	}
+
+	@Override
     public void onApplicationStop() {
         try {
             Search.shutdown();

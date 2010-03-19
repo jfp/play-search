@@ -49,15 +49,19 @@ public class Search {
     public static String DATA_PATH;
     private static String ANALYSER_CLASS;
     
-    static {
+    public static void init() {
+    	try {
+			shutdown();
+		} catch (Exception e) {
+			Logger.error(e, "Error while shutting down search module");
+		}
         ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser", "org.apache.lucene.analysis.standard.StandardAnalyzer");
         if (Play.configuration.containsKey("play.search.path"))
             DATA_PATH = Play.configuration.getProperty("play.search.path");
         else
             DATA_PATH = Play.applicationPath.getAbsolutePath()+"/data/search/";
         Logger.trace("Search module repository is in "+DATA_PATH);
-        if(Play.configuration.containsKey("play.search.reindex")) {
-            Logger.info ("Reindexing ...");
+        if(Boolean.parseBoolean(Play.configuration.getProperty("play.search.reindex","false"))) {
             try {
                 reindex();
             } catch (Exception e) {
@@ -300,11 +304,7 @@ public class Search {
     private static String valueOf (Object object, java.lang.reflect.Field field) throws Exception {
         if (field.getType().equals(String.class))
             return (String)field.get(object);
-        //else if (field.getType().isPrimitive()) 
-            return ""+field.get(object);
-        /*else if (field.getType().isAssignableFrom(Collection.class)) {
-            
-        }*/
+        return ""+field.get(object);
     }
     
     public static IndexSearcher getIndexReader(String name) {
@@ -357,9 +357,11 @@ public class Search {
         for (ApplicationClass applicationClass : classes) {
             List<Model> objects = (List<Model>) JPA.em().createQuery("select e from "+applicationClass.javaClass.getCanonicalName()+" as e").getResultList();
             for (Model model : objects) {
+                Logger.info ("Rebuild index "+model.getClass().getName());
                 index(model);
             }
         }
+        Logger.info ("Rebuild index finished");
     }
     
     public static void shutdown() throws Exception {

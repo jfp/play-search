@@ -1,6 +1,7 @@
 package play.modules.search;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
@@ -48,6 +50,7 @@ public class Search {
 
     public static String DATA_PATH;
     private static String ANALYSER_CLASS;
+    public static boolean sync = true;
 
     public static void init() {
         try {
@@ -55,14 +58,15 @@ public class Search {
         } catch (Exception e) {
             Logger.error(e, "Error while shutting down search module");
         }
-        ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser",
-                "org.apache.lucene.analysis.standard.StandardAnalyzer");
+
+        ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser", "org.apache.lucene.analysis.standard.StandardAnalyzer");
         if (Play.configuration.containsKey("play.search.path"))
             DATA_PATH = Play.configuration.getProperty("play.search.path");
         else
-            DATA_PATH = Play.applicationPath.getAbsolutePath()
-                    + "/data/search/";
+            DATA_PATH = Play.applicationPath.getAbsolutePath() + "/data/search/";
         Logger.trace("Search module repository is in " + DATA_PATH);
+        Logger.trace("Write operations synch: " + sync);
+        sync = Boolean.parseBoolean(Play.configuration.getProperty("play.search.synch", "true"));
     }
 
     private static Analyzer getAnalyser() {
@@ -134,8 +138,7 @@ public class Search {
             if (order.length > 0) {
                 if (reverse) {
                     if (order.length != 1)
-                        throw new SearchException(
-                                "reverse can be used while sorting only one field with oderBy");
+                        throw new SearchException("reverse can be used while sorting only one field with oderBy");
                     else
                         sort.setSort(order[0], reverse);
                 } else
@@ -178,10 +181,8 @@ public class Search {
 
         public long count() throws SearchException {
             try {
-                org.apache.lucene.search.Query luceneQuery = new QueryParser(
-                        "_docID", getAnalyser()).parse(query);
-                hits = getIndexReader(clazz.getName()).search(luceneQuery,
-                        getSort());
+                org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", getAnalyser()).parse(query);
+                hits = getIndexReader(clazz.getName()).search(luceneQuery, getSort());
                 return hits.length();
             } catch (ParseException e) {
                 throw new SearchException(e);
@@ -198,14 +199,11 @@ public class Search {
          *            Object
          * @return
          */
-        public List<QueryResult> executeQuery(boolean fetch)
-                throws SearchException {
+        public List<QueryResult> executeQuery(boolean fetch) throws SearchException {
             try {
                 if (hits == null) {
-                    org.apache.lucene.search.Query luceneQuery = new QueryParser(
-                            "_docID", getAnalyser()).parse(query);
-                    hits = getIndexReader(clazz.getName()).search(luceneQuery,
-                            getSort());
+                    org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", getAnalyser()).parse(query);
+                    hits = getIndexReader(clazz.getName()).search(luceneQuery, getSort());
                 }
                 List<QueryResult> results = new ArrayList<QueryResult>();
                 if (hits == null)
@@ -217,14 +215,12 @@ public class Search {
                 }
                 List<Long> ids = new ArrayList<Long>();
                 if (pageSize > 0) {
-                    for (int i = offset; i < (offset + pageSize > l ? l
-                            : offset + pageSize); i++) {
+                    for (int i = offset; i < (offset + pageSize > l ? l : offset + pageSize); i++) {
                         QueryResult qresult = new QueryResult();
                         qresult.score = hits.score(i);
                         qresult.id = hits.doc(i).get("_docID");
                         if (fetch) {
-                            qresult.object = (Model) JPA.em().find(clazz,
-                                    Long.parseLong(qresult.id));
+                            qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -236,8 +232,7 @@ public class Search {
                         qresult.score = hits.score(i);
                         qresult.id = hits.doc(i).get("_docID");
                         if (fetch) {
-                            qresult.object = (Model) JPA.em().find(clazz,
-                                    Long.parseLong(qresult.id));
+                            qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -265,8 +260,11 @@ public class Search {
                 return;
             Model jpaModel = (Model) object;
             String index = object.getClass().getName();
-            getIndexWriter(index).deleteDocuments(
-                    new Term("_docID", jpaModel.id + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", jpaModel.id + ""));
+            if (sync) {
+                getIndexWriter(index).flush();
+                dirtyReader(index);
+            }
         } catch (Exception e) {
             throw new UnexpectedException(e);
         }
@@ -281,10 +279,12 @@ public class Search {
             Document document = toDocument(object);
             if (document == null)
                 return;
-            getIndexWriter(index).deleteDocuments(
-                    new Term("_docID", jpaModel.id + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", jpaModel.id + ""));
             getIndexWriter(index).addDocument(document);
-            getIndexWriter(index).flush();
+            if (sync) {
+                getIndexWriter(index).flush();
+                dirtyReader(index);
+            }
         } catch (Exception e) {
             throw new UnexpectedException(e);
         }
@@ -298,11 +298,9 @@ public class Search {
             return null;
         Model jpaModel = (Model) object;
         Document document = new Document();
-        document.add(new Field("_docID", jpaModel.id + "", Field.Store.YES,
-                Field.Index.UN_TOKENIZED));
+        document.add(new Field("_docID", jpaModel.id + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
-            play.modules.search.Field index = field
-                    .getAnnotation(play.modules.search.Field.class);
+            play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
             if (index == null)
                 continue;
             if (field.getType().isArray())
@@ -316,16 +314,13 @@ public class Search {
             if (value == null)
                 continue;
 
-            document.add(new Field(name, value,
-                    index.stored() ? Field.Store.YES : Field.Store.NO, index
-                            .tokenize() ? Field.Index.TOKENIZED
-                            : Field.Index.UN_TOKENIZED));
+            document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO, index.tokenize() ? Field.Index.TOKENIZED
+                    : Field.Index.UN_TOKENIZED));
         }
         return document;
     }
 
-    private static String valueOf(Object object, java.lang.reflect.Field field)
-            throws Exception {
+    private static String valueOf(Object object, java.lang.reflect.Field field) throws Exception {
         if (field.getType().equals(String.class))
             return (String) field.get(object);
         return "" + field.get(object);
@@ -335,24 +330,38 @@ public class Search {
         try {
             if (!indexReaders.containsKey(name)) {
                 synchronized (Search.class) {
-                    if (indexReaders.containsKey(name))
-                        indexReaders.get(name).close();
-                    IndexSearcher old = indexReaders.get(name);
-                    if (old != null)
-                        old.close();
                     File root = new File(DATA_PATH, name);
                     if (root.exists()) {
-                        IndexSearcher reader = new IndexSearcher(FSDirectory
-                                .getDirectory(root));
+                        IndexSearcher reader = new IndexSearcher(FSDirectory.getDirectory(root));
                         indexReaders.put(name, reader);
                     } else
-                        throw new UnexpectedException("Could not find " + name
-                                + " index. Please re-index");
+                        throw new UnexpectedException("Could not find " + name + " index. Please re-index");
                 }
             }
             return indexReaders.get(name);
         } catch (Exception e) {
             throw new UnexpectedException("Cannot open index", e);
+        }
+    }
+
+    /**
+     * Used to synchronize reads after write
+     * 
+     * @param name
+     *            of the reader to be reopened
+     */
+    public static void dirtyReader(String name) {
+        synchronized (Search.class) {
+            try {
+                if (indexReaders.containsKey(name)) {
+                    IndexReader rd = indexReaders.get(name).getIndexReader().reopen();
+                    indexReaders.get(name).close();
+                    indexReaders.remove(name);
+                    indexReaders.put(name, new IndexSearcher(rd));
+                }
+            } catch (IOException e) {
+                throw new UnexpectedException("Can't reopen reader", e);
+            }
         }
     }
 
@@ -365,8 +374,7 @@ public class Search {
                         root.mkdirs();
                     if (new File(root, "write.lock").exists())
                         new File(root, "write.lock").delete();
-                    IndexWriter writer = new IndexWriter(FSDirectory
-                            .getDirectory(root), true, getAnalyser());
+                    IndexWriter writer = new IndexWriter(FSDirectory.getDirectory(root), true, getAnalyser());
                     indexWriters.put(name, writer);
                 }
             }
@@ -381,13 +389,10 @@ public class Search {
         File fl = new File(DATA_PATH);
         FileUtils.deleteDirectory(fl);
         fl.mkdirs();
-        List<ApplicationClass> classes = Play.classes
-                .getAnnotatedClasses(Indexed.class);
+        List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
             List<Model> objects = (List<Model>) JPA.em().createQuery(
-                    "select e from "
-                            + applicationClass.javaClass.getCanonicalName()
-                            + " as e").getResultList();
+                    "select e from " + applicationClass.javaClass.getCanonicalName() + " as e").getResultList();
             for (Model model : objects) {
                 index(model);
             }

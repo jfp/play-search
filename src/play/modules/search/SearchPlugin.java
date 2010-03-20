@@ -7,7 +7,7 @@ public class SearchPlugin extends PlayPlugin {
     
     @Override
 	public void onApplicationStart() {
-    	Search.init();
+        Search.init();
 	}
 
 	@Override

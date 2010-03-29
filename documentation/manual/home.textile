@@ -62,6 +62,10 @@ Should you need to re-index your objects (like if you have manually modified you
 
 bc. play.search.reindex=enabled
 
+or
+
+bc. play.search.reindex=true
+
 In your conf/application.conf. Don't forget to remove it after!
 
 Since version 1.1, the create/update/delete of a JPA object is synchronous. It means that once you made a change to an object, the corresponding reader will automaticly be re-opened to reflect the changes. This behaviour should be ok most of the time, but should you want to increase performances, like for large updates, you could use the property 

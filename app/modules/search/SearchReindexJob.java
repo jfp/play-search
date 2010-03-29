@@ -9,7 +9,8 @@ import play.modules.search.Search;
 public class SearchReindexJob extends Job {
     
     public void doJob() throws Exception {
-        if(Boolean.parseBoolean(Play.configuration.getProperty("play.search.reindex","false"))) {
+        if(Boolean.parseBoolean(Play.configuration.getProperty("play.search.reindex","false"))
+                || Play.configuration.getProperty("play.search.reindex","false").trim().equals("enabled")) {
             try {
                 Search.reindex();
             } catch (Exception e) {

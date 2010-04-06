@@ -1,4 +1,4 @@
 .project
 bin/
 dist/
-lib/
+lib/*

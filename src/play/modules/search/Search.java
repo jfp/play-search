@@ -30,17 +30,19 @@ import play.db.jpa.JPASupport;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
 
+import javax.persistence.Id;
+
 /**
  * Very basic tool to basic search on your JPA objects.
- * 
- * On a JPAModel subclass, add the @Indexed annotation on your class, and the @Field
+ * <p/>
+ * On a JPASupport or JPAModel subclass, add the @Indexed annotation on your class, and the @Field
  * annotation on your field members
- * 
+ * <p/>
  * Each time you save, update or delete your class, the corresponding index is
  * updated
- * 
+ * <p/>
  * use the search method to query an index.
- * 
+ * <p/>
  * Samples in samples-and-tests/app/controllers/JPASearch.java
  */
 public class Search {
@@ -95,7 +97,7 @@ public class Search {
     public static class QueryResult {
         public String id;
         public float score;
-        public Model object;
+        public JPASupport object;
     }
 
     public static class Query {
@@ -148,15 +150,15 @@ public class Search {
         }
 
         /**
-         * Executes the query and return directly JPAModel objects (No score
+         * Executes the query and return directly JPASupport objects (No score
          * information)
-         * 
+         *
          * @return
          */
         public <T extends JPASupport> List<T> fetch() throws SearchException {
             try {
                 List<QueryResult> results = executeQuery(true);
-                List<Model> objects = new ArrayList<Model>();
+                List<JPASupport> objects = new ArrayList<JPASupport>();
                 for (QueryResult queryResult : results) {
                     objects.add(queryResult.object);
                 }
@@ -193,10 +195,9 @@ public class Search {
 
         /**
          * Executes the lucene query against the index. You get QueryResults.
-         * 
-         * @param fetch
-         *            load the corresponding JPAModel objects in the QueryResult
-         *            Object
+         *
+         * @param fetch load the corresponding JPASupport objects in the QueryResult
+         *              Object
          * @return
          */
         public List<QueryResult> executeQuery(boolean fetch) throws SearchException {
@@ -220,7 +221,9 @@ public class Search {
                         qresult.score = hits.score(i);
                         qresult.id = hits.doc(i).get("_docID");
                         if (fetch) {
-                            qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
+                            // Maybe we should check the ID type. Here it might not work if id=Long
+                            // qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id) );
+                            qresult.object = (JPASupport) JPA.em().find(clazz, qresult.id);
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -232,7 +235,8 @@ public class Search {
                         qresult.score = hits.score(i);
                         qresult.id = hits.doc(i).get("_docID");
                         if (fetch) {
-                            qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
+                            // qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
+                            qresult.object = (JPASupport) JPA.em().find(clazz, qresult.id);
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -254,13 +258,13 @@ public class Search {
 
     public static void unIndex(Object object) {
         try {
-            if (!(object instanceof Model))
+            if (!(object instanceof JPASupport))
                 return;
             if (object.getClass().getAnnotation(Indexed.class) == null)
                 return;
-            Model jpaModel = (Model) object;
+            JPASupport jpaSupport = (JPASupport) object;
             String index = object.getClass().getName();
-            getIndexWriter(index).deleteDocuments(new Term("_docID", jpaModel.id + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", getIdValueFor(jpaSupport) + ""));
             if (sync) {
                 getIndexWriter(index).flush();
                 dirtyReader(index);
@@ -272,14 +276,16 @@ public class Search {
 
     public static void index(Object object) {
         try {
-            if (!(object instanceof Model))
+            if (!(object instanceof JPASupport)) {
+                Logger.warn("Unable to index " + object + ", unsupported class type. Only play.db.jpa.Model or  play.db.jpa.JPASupport classes are supported.");
                 return;
-            Model jpaModel = (Model) object;
+            }
+            JPASupport jpaSupport = (JPASupport) object;
             String index = object.getClass().getName();
             Document document = toDocument(object);
             if (document == null)
                 return;
-            getIndexWriter(index).deleteDocuments(new Term("_docID", jpaModel.id + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", getIdValueFor(jpaSupport) + ""));
             getIndexWriter(index).addDocument(document);
             if (sync) {
                 getIndexWriter(index).flush();
@@ -296,9 +302,9 @@ public class Search {
             return null;
         if (!(object instanceof JPASupport))
             return null;
-        Model jpaModel = (Model) object;
+        JPASupport jpaSupport = (JPASupport) object;
         Document document = new Document();
-        document.add(new Field("_docID", jpaModel.id + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        document.add(new Field("_docID", getIdValueFor(jpaSupport) + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
             play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
             if (index == null)
@@ -346,9 +352,8 @@ public class Search {
 
     /**
      * Used to synchronize reads after write
-     * 
-     * @param name
-     *            of the reader to be reopened
+     *
+     * @param name of the reader to be reopened
      */
     public static void dirtyReader(String name) {
         synchronized (Search.class) {
@@ -391,10 +396,10 @@ public class Search {
         fl.mkdirs();
         List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
-            List<Model> objects = (List<Model>) JPA.em().createQuery(
+            List<JPASupport> objects = (List<JPASupport>) JPA.em().createQuery(
                     "select e from " + applicationClass.javaClass.getCanonicalName() + " as e").getResultList();
-            for (Model model : objects) {
-                index(model);
+            for (JPASupport jpaSupport : objects) {
+                index(jpaSupport);
             }
         }
         Logger.info("Rebuild index finished");
@@ -409,5 +414,36 @@ public class Search {
         }
         indexWriters.clear();
         indexReaders.clear();
+    }
+
+    /**
+     * Lookups the id field, being a Long id for Model and an annotated field @Id for JPASupport
+     * and returns the field value.
+     *
+     * @param jpaSupport is a Play! Framework that supports JPA
+     * @return the field value (a Long or a String for UUID)
+     */
+    private static Object getIdValueFor(JPASupport jpaSupport) {
+        if (jpaSupport instanceof Model) {
+            return ((Model) jpaSupport).id;
+        }
+        if (jpaSupport.getClass().isAnnotationPresent(javax.persistence.Id.class)) {
+            throw new RuntimeException("Unable to retrieve the @Id field on your index Entity (" + jpaSupport + "). This entity must be annotated with @Id or extends Model.");
+        }
+        for (java.lang.reflect.Field field : jpaSupport.getClass().getDeclaredFields()) {
+            // check if field has annotation
+            if (field.getAnnotation(Id.class) != null) {
+                Object val = null;
+                try {
+                    val = field.get(jpaSupport);
+                } catch (IllegalAccessException e) {
+                    Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to " + e.getMessage(), e);
+                }
+                return val;
+
+            }
+
+        }
+        throw new RuntimeException("Your class " + jpaSupport.getClass().getName() + " is annotated with javax.persistence.Id but the field Id was not found");
     }
 }

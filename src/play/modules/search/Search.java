@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Id;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -25,12 +27,11 @@ import org.apache.lucene.store.FSDirectory;
 import play.Logger;
 import play.Play;
 import play.classloading.ApplicationClasses.ApplicationClass;
+import play.data.binding.Binder;
 import play.db.jpa.JPA;
 import play.db.jpa.JPASupport;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
-
-import javax.persistence.Id;
 
 /**
  * Very basic tool to basic search on your JPA objects.
@@ -223,7 +224,8 @@ public class Search {
                         if (fetch) {
                             // Maybe we should check the ID type. Here it might not work if id=Long
                             // qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id) );
-                            qresult.object = (JPASupport) JPA.em().find(clazz, qresult.id);
+                            Object objectId = getIdValueFromIndex (clazz,qresult.id);
+                            qresult.object = (JPASupport) JPA.em().find(clazz, objectId);
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -235,8 +237,8 @@ public class Search {
                         qresult.score = hits.score(i);
                         qresult.id = hits.doc(i).get("_docID");
                         if (fetch) {
-                            // qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id));
-                            qresult.object = (JPASupport) JPA.em().find(clazz, qresult.id);
+                            Object objectId = getIdValueFromIndex (clazz,qresult.id);
+                            qresult.object = (JPASupport) JPA.em().find(clazz, objectId);
                             if (qresult.object == null)
                                 throw new SearchException("Please re-index");
                         }
@@ -415,6 +417,37 @@ public class Search {
         indexWriters.clear();
         indexReaders.clear();
     }
+    /**
+     * Looks for the type of the id fiels on the JPASupport target class
+     * and use play's binder to retrieve the corresponding object
+     * used to build JPA load query
+     * @param clazz JPASupport target class
+     * @param indexValue String value of the id, taken from index
+     * @return Object id expected to build query
+     */
+    private static Object getIdValueFromIndex (Class clazz, String indexValue) {
+        java.lang.reflect.Field field = getIdField(clazz);
+        Class parameter = field.getType();
+        try {
+            return Binder.directBind(indexValue, parameter);
+        } catch (Exception e) {
+            throw new UnexpectedException("Could not convert the ID from index to corresponding type",e);
+        }
+    }
+
+    /**
+     * Find a ID field on the JPASupport target class
+     * @param clazz JPASupport target class
+     * @return corresponding field
+     */
+    private static java.lang.reflect.Field getIdField (Class clazz) {
+        for (java.lang.reflect.Field field : clazz.getFields()) {
+            if (field.getAnnotation(Id.class) != null) {
+                return field;
+            }
+        }
+        throw new RuntimeException("Your class " + clazz.getName() + " is annotated with javax.persistence.Id but the field Id was not found");
+    }
 
     /**
      * Lookups the id field, being a Long id for Model and an annotated field @Id for JPASupport
@@ -427,23 +460,14 @@ public class Search {
         if (jpaSupport instanceof Model) {
             return ((Model) jpaSupport).id;
         }
-        if (jpaSupport.getClass().isAnnotationPresent(javax.persistence.Id.class)) {
-            throw new RuntimeException("Unable to retrieve the @Id field on your index Entity (" + jpaSupport + "). This entity must be annotated with @Id or extends Model.");
-        }
-        for (java.lang.reflect.Field field : jpaSupport.getClass().getDeclaredFields()) {
-            // check if field has annotation
-            if (field.getAnnotation(Id.class) != null) {
-                Object val = null;
-                try {
-                    val = field.get(jpaSupport);
-                } catch (IllegalAccessException e) {
-                    Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to " + e.getMessage(), e);
-                }
-                return val;
 
-            }
-
+        java.lang.reflect.Field field = getIdField(jpaSupport.getClass());
+        Object val = null;
+        try {
+            val = field.get(jpaSupport);
+        } catch (IllegalAccessException e) {
+            Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to " + e.getMessage(), e);
         }
-        throw new RuntimeException("Your class " + jpaSupport.getClass().getName() + " is annotated with javax.persistence.Id but the field Id was not found");
+        return val;
     }
 }

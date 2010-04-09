@@ -2,7 +2,13 @@ package play.modules.search;
 
 import play.PlayPlugin;
 import play.exceptions.UnexpectedException;
-
+/**
+ * Integrated to Play's lifcycle, SearchPlugin
+ * will trap JPA events and drive the Search
+ * service.
+ * @author jfp
+ *
+ */
 public class SearchPlugin extends PlayPlugin {
     
     @Override

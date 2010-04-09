@@ -11,6 +11,7 @@ import org.apache.lucene.search.Sort;
 import play.db.jpa.JPA;
 import play.db.jpa.JPASupport;
 import play.exceptions.UnexpectedException;
+
 /**
  * Query API. This is a chainable API you get from
  * Search.search () methods
@@ -19,15 +20,17 @@ import play.exceptions.UnexpectedException;
 public class Query {
     private Class clazz;
     private String query;
+    private Store store;
     private String[] order = new String[0];
     private int offset = 0;
     private int pageSize = 10;
     private boolean reverse = false;
     private Hits hits = null;
 
-    protected Query(String query, Class clazz) {
+    protected Query(String query, Class clazz, Store store) {
         this.query = query;
         this.clazz = clazz;
+        this.store = store;
     }
 
     public Query page(int offset, int pageSize) {
@@ -100,7 +103,7 @@ public class Query {
     public long count() throws SearchException {
         try {
             org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", Search.getAnalyser()).parse(query);
-            hits = Search.getIndexReader(clazz.getName()).search(luceneQuery, getSort());
+            hits = store.getIndexSearcher(clazz.getName()).search(luceneQuery, getSort());
             return hits.length();
         } catch (ParseException e) {
             throw new SearchException(e);
@@ -120,7 +123,7 @@ public class Query {
         try {
             if (hits == null) {
                 org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", Search.getAnalyser()).parse(query);
-                hits = Search.getIndexReader(clazz.getName()).search(luceneQuery, getSort());
+                hits = store.getIndexSearcher(clazz.getName()).search(luceneQuery, getSort());
             }
             List<QueryResult> results = new ArrayList<QueryResult>();
             if (hits == null)
@@ -137,8 +140,6 @@ public class Query {
                     qresult.score = hits.score(i);
                     qresult.id = hits.doc(i).get("_docID");
                     if (fetch) {
-                        // Maybe we should check the ID type. Here it might not work if id=Long
-                        // qresult.object = (Model) JPA.em().find(clazz, Long.parseLong(qresult.id) );
                         Object objectId = ConvertionUtils.getIdValueFromIndex (clazz,qresult.id);
                         qresult.object = (JPASupport) JPA.em().find(clazz, objectId);
                         if (qresult.object == null)
@@ -178,7 +179,6 @@ public class Query {
         public SearchException(String message, Throwable cause) {
             super(message, cause);
         }
-
         public SearchException(Throwable cause) {
             super(cause);
         }

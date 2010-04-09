@@ -12,7 +12,7 @@ public class SearchReindexJob extends Job {
         if(Boolean.parseBoolean(Play.configuration.getProperty("play.search.reindex","false"))
                 || Play.configuration.getProperty("play.search.reindex","false").trim().equals("enabled")) {
             try {
-                Search.reindex();
+                Search.rebuildAllIndexes ();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

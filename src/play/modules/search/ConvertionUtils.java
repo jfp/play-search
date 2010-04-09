@@ -12,6 +12,7 @@ import play.data.binding.Binder;
 import play.db.jpa.JPASupport;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
+
 /**
  * Various utils handling object to index
  * and query result to object conversion

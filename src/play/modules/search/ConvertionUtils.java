@@ -37,6 +37,7 @@ public class ConvertionUtils {
         JPASupport jpaSupport = (JPASupport) object;
         Document document = new Document();
         document.add(new Field("_docID", getIdValueFor(jpaSupport) + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        StringBuffer allValue = new StringBuffer ();
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
             play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
             if (index == null)
@@ -54,7 +55,9 @@ public class ConvertionUtils {
 
             document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO, index.tokenize() ? Field.Index.TOKENIZED
                     : Field.Index.UN_TOKENIZED));
+            allValue.append(value).append(' ');
         }
+        document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.TOKENIZED));
         return document;
     }
 

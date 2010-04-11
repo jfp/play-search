@@ -2,8 +2,8 @@ package controllers.modules.search;
 
 import java.util.List;
 
-import play.modules.search.ManagedIndex;
 import play.modules.search.Search;
+import play.modules.search.store.ManagedIndex;
 import play.mvc.Controller;
 
 public class Administration extends Controller {

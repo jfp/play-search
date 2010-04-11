@@ -1,4 +1,4 @@
-package play.modules.search;
+package play.modules.search.store;
 
 import java.util.Collection;
 
@@ -12,6 +12,7 @@ import play.data.binding.Binder;
 import play.db.jpa.JPASupport;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
+import play.modules.search.Indexed;
 
 /**
  * Various utils handling object to index

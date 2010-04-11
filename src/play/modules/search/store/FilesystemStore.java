@@ -1,4 +1,4 @@
-package play.modules.search;
+package play.modules.search.store;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,8 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 import play.db.jpa.JPA;
 import play.db.jpa.JPASupport;
 import play.exceptions.UnexpectedException;
+import play.modules.search.Indexed;
+import play.modules.search.Search;
 
 public class FilesystemStore implements Store {
 

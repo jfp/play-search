@@ -1,8 +1,9 @@
-package play.modules.search;
+package play.modules.search.store;
 
 import java.util.List;
 
 import org.apache.lucene.search.IndexSearcher;
+
 
 /**
  * Manages a search backed (indexes, searchers, readers...)

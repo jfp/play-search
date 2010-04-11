@@ -1,4 +1,4 @@
-package play.modules.search;
+package play.modules.search.store;
 
 public class ManagedIndex {
     public String name;

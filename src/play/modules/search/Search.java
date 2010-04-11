@@ -5,6 +5,7 @@ import org.apache.lucene.analysis.Analyzer;
 import play.Logger;
 import play.Play;
 import play.exceptions.UnexpectedException;
+import play.modules.search.store.Store;
 
 /**
  * Very basic tool to basic search on your JPA objects.
@@ -30,7 +31,7 @@ public class Search {
             Logger.error(e, "Error while shutting down search module");
         }
         ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser", "org.apache.lucene.analysis.standard.StandardAnalyzer");
-        String storeClassName = Play.configuration.getProperty("play.search.store","play.modules.search.FilesystemStore");
+        String storeClassName = Play.configuration.getProperty("play.search.store","play.modules.search.store.FilesystemStore");
         try {
             store = (Store) Class.forName(storeClassName).newInstance();
             store.start();

@@ -11,6 +11,8 @@ import org.apache.lucene.search.Sort;
 import play.db.jpa.JPA;
 import play.db.jpa.JPASupport;
 import play.exceptions.UnexpectedException;
+import play.modules.search.store.ConvertionUtils;
+import play.modules.search.store.Store;
 
 /**
  * Query API. This is a chainable API you get from

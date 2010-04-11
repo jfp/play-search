@@ -48,6 +48,10 @@ public class Search {
         }
     }
 
+    public static Store getCurrentStore () {
+        return store;
+    }
+    
     public static Query search(String query, Class clazz) {
         return new Query(query, clazz, store);
     }
@@ -57,7 +61,7 @@ public class Search {
     }
 
     public static void index(Object object) {
-        store.index(object);
+        store.index(object,object.getClass().getName());
     }
 
     public static void rebuildAllIndexes () throws Exception {

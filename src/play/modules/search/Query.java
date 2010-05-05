@@ -5,9 +5,11 @@ import java.util.List;
 
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.Sort;
 
+import play.Play;
 import play.db.jpa.JPA;
 import play.db.jpa.JPASupport;
 import play.exceptions.UnexpectedException;
@@ -125,6 +127,7 @@ public class Query {
         try {
             if (hits == null) {
                 org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", Search.getAnalyser()).parse(query);
+                BooleanQuery.setMaxClauseCount(Integer.parseInt(Play.configuration.getProperty("play.search.maxClauseCount", "1024")));
                 hits = store.getIndexSearcher(clazz.getName()).search(luceneQuery, getSort());
             }
             List<QueryResult> results = new ArrayList<QueryResult>();

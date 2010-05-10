@@ -17,6 +17,9 @@ public interface Store {
     public void rebuildAllIndexes() throws Exception;
     public IndexSearcher getIndexSearcher (String searcherName);
     public List<ManagedIndex> listIndexes();
+    public boolean hasIndex (String name);
+    public void delete (String name);
+    public void deleteAll ();
     public void optimize (String name);
     public void rebuild (String name);
     public void reopen (String name);

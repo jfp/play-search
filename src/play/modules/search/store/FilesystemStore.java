@@ -215,4 +215,41 @@ public class FilesystemStore implements Store {
     public void reopen(String name) {
         dirtyReader(name);
     }
+
+    public void delete(String name) {
+        synchronized (this) {
+            try {
+                if (indexSearchers.containsKey(name)) {
+                    IndexReader rd = indexSearchers.get(name).getIndexReader();
+                    indexSearchers.get(name).close();
+                    indexSearchers.remove(name);
+                }
+                if (indexWriters.containsKey(name)) {
+                    indexWriters.get(name).close();
+                    indexWriters.remove(name);
+                }
+                File target = new File(DATA_PATH, name);
+                if (target.exists() && target.isDirectory())
+                    FileUtils.deleteDirectory(target);
+            } catch (Exception e) {
+                throw new UnexpectedException("Can't reopen reader", e);
+            }
+        }
+    }
+
+    public void deleteAll() {
+        List<ManagedIndex> indexes = listIndexes();
+        for (ManagedIndex managedIndex : indexes) {
+            delete(managedIndex.name);
+        }
+    }
+
+    public boolean hasIndex(String name) {
+        List<ManagedIndex> indexes = listIndexes();
+        for (ManagedIndex managedIndex : indexes) {
+            if (managedIndex.name.equals(name))
+                return true;
+        }
+        return false;
+    }
 }

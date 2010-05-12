@@ -1,6 +1,7 @@
 package play.modules.search.store;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,11 +78,10 @@ public class FilesystemStore implements Store {
             if (!indexSearchers.containsKey(name)) {
                 synchronized (this) {
                     File root = new File(DATA_PATH, name);
-                    if (root.exists()) {
-                        IndexSearcher reader = new IndexSearcher(FSDirectory.getDirectory(root));
-                        indexSearchers.put(name, reader);
-                    } else
-                        throw new UnexpectedException("Could not find " + name + " index. Please re-index");
+                    if (!root.exists())
+                        getIndexWriter(name);
+                    IndexSearcher reader = new IndexSearcher(FSDirectory.getDirectory(root));
+                    indexSearchers.put(name, reader);
                 }
             }
             return indexSearchers.get(name);
@@ -238,18 +238,20 @@ public class FilesystemStore implements Store {
     }
 
     public void deleteAll() {
-        List<ManagedIndex> indexes = listIndexes();
-        for (ManagedIndex managedIndex : indexes) {
-            delete(managedIndex.name);
+        File root = new File(DATA_PATH);
+        if (root.exists() && root.isDirectory()) {
+            File[] indexes = root.listFiles(new FileFilter() {
+                public boolean accept(File pathname) {
+                    return pathname.isDirectory();
+                }
+            });
+            for (File file : indexes) {
+                delete (file.getName());
+            }
         }
     }
 
     public boolean hasIndex(String name) {
-        List<ManagedIndex> indexes = listIndexes();
-        for (ManagedIndex managedIndex : indexes) {
-            if (managedIndex.name.equals(name))
-                return true;
-        }
-        return false;
+        return new File(DATA_PATH,name).exists();
     }
 }

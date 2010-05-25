@@ -49,7 +49,20 @@ public class ConvertionUtils {
                 continue;
 
             String name = field.getName();
-            String value = valueOf(object, field);
+            String value = null;
+
+            if (field.getType().isAssignableFrom(JPASupport.class) && !index.joinField().isEmpty()) {
+                JPASupport joinObject = (JPASupport) field.get(object);
+                for (java.lang.reflect.Field joinField : joinObject.getClass().getFields()) {
+                    if (joinField.getName().equals(index.joinField())) {
+                        name = joinField.getName();
+                        value = valueOf(joinObject, joinField);
+                    }
+                }
+            }
+            else {
+                value = valueOf(object, field);
+            }
 
             if (value == null)
                 continue;

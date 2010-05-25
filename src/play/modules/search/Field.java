@@ -13,4 +13,5 @@ import java.lang.annotation.Target;
 public @interface Field {
     boolean stored() default false;
     boolean tokenize() default true;
+    String joinField() default "";
 }

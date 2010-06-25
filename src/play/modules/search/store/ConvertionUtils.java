@@ -9,6 +9,7 @@ import org.apache.lucene.document.Field;
 
 import play.Logger;
 import play.data.binding.Binder;
+import play.db.jpa.FileAttachment;
 import play.db.jpa.JPASupport;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
@@ -76,8 +77,12 @@ public class ConvertionUtils {
     }
 
     public static String valueOf(Object object, java.lang.reflect.Field field) throws Exception {
-        if (field.getType().equals(String.class))
+        if (field.getType().equals(String.class)) {
             return (String) field.get(object);
+        }
+        if (field.getType().equals(FileAttachment.class) && field.get(object)!= null) {
+            return FileExtractor.getText((FileAttachment) field.get(object));
+        }
         return "" + field.get(object);
     }
 

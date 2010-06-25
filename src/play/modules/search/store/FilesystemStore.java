@@ -68,6 +68,12 @@ public class FilesystemStore implements Store {
                 getIndexWriter(index).flush();
                 dirtyReader(index);
             }
+            else {
+                if(getIndexWriter(index).ramSizeInBytes() > 1024 * 1024 * 48) {
+                    getIndexWriter(index).flush();
+                    dirtyReader(index);
+                }
+            }
         } catch (Exception e) {
             throw new UnexpectedException(e);
         }
@@ -102,7 +108,7 @@ public class FilesystemStore implements Store {
                     IndexReader rd = indexSearchers.get(name).getIndexReader();
                     indexSearchers.get(name).close();
                     indexSearchers.remove(name);
-                    }
+                }
             } catch (Exception e) {
                 throw new UnexpectedException("Can't reopen reader", e);
             }
@@ -201,6 +207,8 @@ public class FilesystemStore implements Store {
         }
         //FIXME ensure no other read/writes in here.
         try {
+            getIndexWriter(cl.getName() + id).flush();
+            dirtyReader(cl.getName() + id);
             getIndexSearcher(name).close();
             indexSearchers.remove(name);
             getIndexWriter(name).close();

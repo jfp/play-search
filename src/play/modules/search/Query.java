@@ -54,7 +54,10 @@ public class Query {
     }
 
     public Query orderBy(String... order) {
-        this.order = order;
+        this.order = new String[order.length];
+        for(int i = 0; i < order.length; i++) {
+            this.order[i] = order[i] + ( ConvertionUtils.isForcedUntokenized(clazz, order[i]) ? "_untokenized" : "" );
+        }
         return this;
     }
 

@@ -69,6 +69,9 @@ public class ConvertionUtils {
 
             document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO, index.tokenize() ? Field.Index.TOKENIZED
                     : Field.Index.UN_TOKENIZED));
+            if(index.tokenize() && index.sortable() ) {
+                document.add(new Field(name + "_untokenized", value, index.stored() ? Field.Store.YES : Field.Store.NO, Field.Index.UN_TOKENIZED));
+            }
             allValue.append(value).append(' ');
         }
         document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.TOKENIZED));
@@ -133,5 +136,16 @@ public class ConvertionUtils {
             Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to " + e.getMessage(), e);
         }
         return val;
+    }
+
+    public static boolean isForcedUntokenized(Class clazz, String fieldName) {
+        try {
+            java.lang.reflect.Field field = clazz.getField(fieldName);
+            play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
+            return index.tokenize() && index.sortable();
+        } catch (Exception e) {
+            Logger.error("%s", e.getCause());
+        }
+        return false;
     }
 }

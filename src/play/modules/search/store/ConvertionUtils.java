@@ -3,6 +3,7 @@ package play.modules.search.store;
 import java.util.Collection;
 
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -86,6 +87,12 @@ public class ConvertionUtils {
         if (field.getType().equals(FileAttachment.class) && field.get(object)!= null) {
             return FileExtractor.getText((FileAttachment) field.get(object));
         }
+
+        Object o = field.get(object);
+        if (o instanceof JPASupport) {
+            return "" + getIdValueFor((JPASupport) o);
+        }
+
         return "" + field.get(object);
     }
 

@@ -3,6 +3,7 @@ package play.modules.search.store;
 import java.util.Collection;
 
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
 import org.apache.lucene.document.Document;
@@ -89,7 +90,7 @@ public class ConvertionUtils {
         }
 
         Object o = field.get(object);
-        if (o instanceof JPASupport) {
+        if (field.isAnnotationPresent(ManyToOne.class) && o instanceof JPASupport) {
             return "" + getIdValueFor((JPASupport) o);
         }
 

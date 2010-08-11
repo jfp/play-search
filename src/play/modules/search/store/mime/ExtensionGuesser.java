@@ -12,7 +12,7 @@ public class ExtensionGuesser implements MimeGuesser {
         //FIXME: complete
     }
     public String guess (FileAttachment file) {
-        String extension = file.filename.substring(file.filename.lastIndexOf('.'));
+        String extension = file.filename.substring(file.filename.lastIndexOf('.')+1);
         return extensions.get(extension);
     }
     

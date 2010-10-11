@@ -10,7 +10,7 @@ import play.modules.search.store.Store;
 /**
  * Very basic tool to basic search on your JPA objects.
  * <p/>
- * On a JPASupport or JPAModel subclass, add the @Indexed annotation on your class, and the @Field
+ * On a JPABase subclass, add the @Indexed annotation on your class, and the @Field
  * annotation on your field members
  * <p/>
  * Each time you save, update or delete your class, the corresponding index is
@@ -22,6 +22,7 @@ import play.modules.search.store.Store;
  */
 public class Search {
     private static String ANALYSER_CLASS;
+
     private static Store store;
 
     public static void init() {
@@ -30,29 +31,33 @@ public class Search {
         } catch (Exception e) {
             Logger.error(e, "Error while shutting down search module");
         }
-        ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser", "org.apache.lucene.analysis.standard.StandardAnalyzer");
-        String storeClassName = Play.configuration.getProperty("play.search.store","play.modules.search.store.FilesystemStore");
+        ANALYSER_CLASS =
+                        Play.configuration.getProperty("play.search.analyser",
+                                        "org.apache.lucene.analysis.standard.StandardAnalyzer");
+        String storeClassName =
+                        Play.configuration
+                                        .getProperty("play.search.store", "play.modules.search.store.FilesystemStore");
         try {
-            store = (Store) Class.forName(storeClassName).newInstance();
+            store = (Store ) Class.forName(storeClassName).newInstance();
             store.start();
         } catch (Exception e) {
-            throw new UnexpectedException("Could not intialize store",e);
+            throw new UnexpectedException("Could not intialize store", e);
         }
     }
 
     public static Analyzer getAnalyser() {
         try {
             Class clazz = Class.forName(ANALYSER_CLASS);
-            return (Analyzer) clazz.newInstance();
+            return (Analyzer ) clazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Store getCurrentStore () {
+    public static Store getCurrentStore() {
         return store;
     }
-    
+
     public static Query search(String query, Class clazz) {
         return new Query(query, clazz, store);
     }
@@ -62,15 +67,15 @@ public class Search {
     }
 
     public static void index(Object object) {
-        store.index(object,object.getClass().getName());
+        store.index(object, object.getClass().getName());
     }
 
-    public static void rebuildAllIndexes () throws Exception {
+    public static void rebuildAllIndexes() throws Exception {
         store.rebuildAllIndexes();
     }
 
     public static void shutdown() throws Exception {
-        if (store!=null)
+        if (store != null)
             store.stop();
     }
 }

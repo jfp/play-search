@@ -1,0 +1,23 @@
+h1. Play-Search module for Play 1.1
+
+This version of the play-search module is based on my fork of the original code (<a href="http://github.com/jfp/play-search">jfp/play-search</a>).
+
+h2. Changings
+
+My fork is based on the last version of play-search module (never released).
+
+What has changed :
+
+<ol><li>Play 1.1RC1 has lost Lucene lib, so I added the same version in the module (lucene-2.3.1).</li>
+
+<li>Play 1.1RC1 has deprecated JPASupport class, so I migrated the module to JPABase, the new JPA superclass.</li>
+
+</ol>
+
+h2. Tests
+
+This version of the module is working with my applications.
+
+Contact me if you find some bugs.
+
+Jean-Philippe Briend

@@ -2,6 +2,10 @@ h1. Search module
 
 The **Search** module allows you to have basic full text search functionalities to your JPA Model. It is based on Lucene, and requires a real file system to store its indexes.
 
+h2. <a> Version </a>
+
+Search module versions 2.x require playframework version 1.1.
+
 h2. <a> Enable the module</a>
 
 In the **/conf/application.conf** file, enable the Search module by adding this line: 

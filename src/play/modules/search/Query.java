@@ -11,27 +11,34 @@ import org.apache.lucene.search.Sort;
 
 import play.Play;
 import play.db.jpa.JPA;
-import play.db.jpa.JPASupport;
+import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
 import play.modules.search.store.ConvertionUtils;
 import play.modules.search.store.Store;
 
 /**
- * Query API. This is a chainable API you get from
- * Search.search () methods
+ * Query API. This is a chainable API you get from Search.search () methods
+ * 
  * @author jfp
  */
 public class Query {
-    private Class clazz;
+    private Class<JPABase> clazz;
+
     private String query;
+
     private Store store;
+
     private String[] order = new String[0];
+
     private int offset = 0;
+
     private int pageSize = 10;
+
     private boolean reverse = false;
+
     private Hits hits = null;
 
-    protected Query(String query, Class clazz, Store store) {
+    protected Query(String query, Class<JPABase> clazz, Store store) {
         this.query = query;
         this.clazz = clazz;
         this.store = store;
@@ -55,8 +62,8 @@ public class Query {
 
     public Query orderBy(String... order) {
         this.order = new String[order.length];
-        for(int i = 0; i < order.length; i++) {
-            this.order[i] = order[i] + ( ConvertionUtils.isForcedUntokenized(clazz, order[i]) ? "_untokenized" : "" );
+        for (int i = 0; i < order.length; i++) {
+            this.order[i] = order[i] + (ConvertionUtils.isForcedUntokenized(clazz, order[i]) ? "_untokenized" : "");
         }
         return this;
     }
@@ -76,19 +83,20 @@ public class Query {
     }
 
     /**
-     * Executes the query and return directly JPASupport objects (No score
+     * Executes the query and return directly JPABase objects (No score
      * information)
-     *
+     * 
      * @return
      */
-    public <T extends JPASupport> List<T> fetch() throws SearchException {
+    @SuppressWarnings("unchecked")
+    public <T extends JPABase> List<T> fetch() throws SearchException {
         try {
             List<QueryResult> results = executeQuery(true);
-            List<JPASupport> objects = new ArrayList<JPASupport>();
+            List<JPABase> objects = new ArrayList<JPABase>();
             for (QueryResult queryResult : results) {
                 objects.add(queryResult.object);
             }
-            return (List) objects;
+            return (List<T>) objects;
         } catch (Exception e) {
             throw new UnexpectedException(e);
         }
@@ -121,16 +129,18 @@ public class Query {
 
     /**
      * Executes the lucene query against the index. You get QueryResults.
-     *
-     * @param fetch load the corresponding JPASupport objects in the QueryResult
-     *              Object
+     * 
+     * @param fetch load the corresponding JPABase objects in the QueryResult
+     *            Object
      * @return
      */
     public List<QueryResult> executeQuery(boolean fetch) throws SearchException {
         try {
             if (hits == null) {
-                org.apache.lucene.search.Query luceneQuery = new QueryParser("_docID", Search.getAnalyser()).parse(query);
-                BooleanQuery.setMaxClauseCount(Integer.parseInt(Play.configuration.getProperty("play.search.maxClauseCount", "1024")));
+                org.apache.lucene.search.Query luceneQuery =
+                                new QueryParser("_docID", Search.getAnalyser()).parse(query);
+                BooleanQuery.setMaxClauseCount(Integer.parseInt(Play.configuration.getProperty(
+                                "play.search.maxClauseCount", "1024")));
                 hits = store.getIndexSearcher(clazz.getName()).search(luceneQuery, getSort());
             }
             List<QueryResult> results = new ArrayList<QueryResult>();
@@ -148,8 +158,8 @@ public class Query {
                     qresult.score = hits.score(i);
                     qresult.id = hits.doc(i).get("_docID");
                     if (fetch) {
-                        Object objectId = ConvertionUtils.getIdValueFromIndex (clazz,qresult.id);
-                        qresult.object = (JPASupport) JPA.em().find(clazz, objectId);
+                        Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
+                        qresult.object = (JPABase)JPA.em().find(clazz, objectId);
                         if (qresult.object == null)
                             throw new SearchException("Please re-index");
                     }
@@ -161,8 +171,8 @@ public class Query {
                     qresult.score = hits.score(i);
                     qresult.id = hits.doc(i).get("_docID");
                     if (fetch) {
-                        Object objectId = ConvertionUtils.getIdValueFromIndex (clazz,qresult.id);
-                        qresult.object = (JPASupport) JPA.em().find(clazz, objectId);
+                        Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
+                        qresult.object = (JPABase)JPA.em().find(clazz, objectId);
                         if (qresult.object == null)
                             throw new SearchException("Please re-index");
                     }
@@ -176,17 +186,20 @@ public class Query {
             throw new UnexpectedException(e);
         }
     }
-    
+
     public static class QueryResult {
         public String id;
+
         public float score;
-        public JPASupport object;
+
+        public JPABase object;
     }
-    
+
     public static class SearchException extends RuntimeException {
         public SearchException(String message, Throwable cause) {
             super(message, cause);
         }
+
         public SearchException(Throwable cause) {
             super(cause);
         }
@@ -196,4 +209,3 @@ public class Query {
         }
     }
 }
-

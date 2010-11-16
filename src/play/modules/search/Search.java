@@ -10,7 +10,7 @@ import play.modules.search.store.Store;
 /**
  * Very basic tool to basic search on your JPA objects.
  * <p/>
- * On a JPASupport or JPAModel subclass, add the @Indexed annotation on your class, and the @Field
+ * On a JPABase subclass, add the @Indexed annotation on your class, and the @Field
  * annotation on your field members
  * <p/>
  * Each time you save, update or delete your class, the corresponding index is

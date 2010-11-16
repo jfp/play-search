@@ -21,7 +21,7 @@ import play.Logger;
 import play.Play;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.db.jpa.JPA;
-import play.db.jpa.JPASupport;
+import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
 import play.modules.search.Indexed;
 import play.modules.search.Search;
@@ -29,20 +29,22 @@ import play.modules.search.Search;
 public class FilesystemStore implements Store {
 
     private Map<String, IndexWriter> indexWriters = new HashMap<String, IndexWriter>();
+
     private Map<String, IndexSearcher> indexSearchers = new HashMap<String, IndexSearcher>();
-    
+
     public static String DATA_PATH;
+
     public static boolean sync = true;
-    
+
     public void unIndex(Object object) {
         try {
-            if (!(object instanceof JPASupport))
+            if (!(object instanceof JPABase))
                 return;
             if (object.getClass().getAnnotation(Indexed.class) == null)
                 return;
-            JPASupport jpaSupport = (JPASupport) object;
+            JPABase jpaBase = (JPABase ) object;
             String index = object.getClass().getName();
-            getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaSupport) + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaBase) + ""));
             if (sync) {
                 getIndexWriter(index).flush();
                 dirtyReader(index);
@@ -54,22 +56,21 @@ public class FilesystemStore implements Store {
 
     public void index(Object object, String index) {
         try {
-            if (!(object instanceof JPASupport)) {
-                Logger.warn("Unable to index " + object + ", unsupported class type. Only play.db.jpa.Model or  play.db.jpa.JPASupport classes are supported.");
+            if (!(object instanceof JPABase)) {
+                Logger.warn("Unable to index " + object + ", unsupported class type. Only play.db.jpa.JPABase classes are supported.");
                 return;
             }
-            JPASupport jpaSupport = (JPASupport) object;
+            JPABase jpaABase = (JPABase ) object;
             Document document = ConvertionUtils.toDocument(object);
             if (document == null)
                 return;
-            getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaSupport) + ""));
+            getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaABase) + ""));
             getIndexWriter(index).addDocument(document);
             if (sync) {
                 getIndexWriter(index).flush();
                 dirtyReader(index);
-            }
-            else {
-                if(getIndexWriter(index).ramSizeInBytes() > 1024 * 1024 * 48) {
+            } else {
+                if (getIndexWriter(index).ramSizeInBytes() > 1024 * 1024 * 48) {
                     getIndexWriter(index).flush();
                     dirtyReader(index);
                 }
@@ -134,17 +135,18 @@ public class FilesystemStore implements Store {
         }
     }
 
-    public void rebuildAllIndexes () throws Exception {
+    public void rebuildAllIndexes() throws Exception {
         stop();
         File fl = new File(DATA_PATH);
         FileUtils.deleteDirectory(fl);
         fl.mkdirs();
         List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
-            List<JPASupport> objects = (List<JPASupport>) JPA.em().createQuery(
-                    "select e from " + applicationClass.javaClass.getCanonicalName() + " as e").getResultList();
-            for (JPASupport jpaSupport : objects) {
-                index(jpaSupport,applicationClass.javaClass.getName());
+            List<JPABase> objects = JPA.em().createQuery(
+                                            "select e from " + applicationClass.javaClass.getCanonicalName() + " as e")
+                                            .getResultList();
+            for (JPABase jpaBase : objects) {
+                index(jpaBase, applicationClass.javaClass.getName());
             }
         }
         Logger.info("Rebuild index finished");
@@ -155,15 +157,15 @@ public class FilesystemStore implements Store {
         List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
             ManagedIndex index = new ManagedIndex();
-            index.name=applicationClass.javaClass.getName();
-            index.optimized=getIndexSearcher(index.name).getIndexReader().isOptimized();
-            index.documentCount=getIndexSearcher(index.name).getIndexReader().numDocs();
-            index.jpaCount=(Long)JPA.em().createQuery("select count (*) from "+applicationClass.javaClass.getCanonicalName()+")").getSingleResult();
+            index.name = applicationClass.javaClass.getName();
+            index.optimized = getIndexSearcher(index.name).getIndexReader().isOptimized();
+            index.documentCount = getIndexSearcher(index.name).getIndexReader().numDocs();
+            index.jpaCount =  (Long ) JPA.em().createQuery("select count (*) from " + applicationClass.javaClass.getCanonicalName()+ ")").getSingleResult();
             indexes.add(index);
         }
         return indexes;
     }
-    
+
     public void start() {
         if (Play.configuration.containsKey("play.search.path"))
             DATA_PATH = Play.configuration.getProperty("play.search.path");
@@ -172,7 +174,6 @@ public class FilesystemStore implements Store {
         Logger.trace("Search module repository is in " + DATA_PATH);
         sync = Boolean.parseBoolean(Play.configuration.getProperty("play.search.synch", "true"));
         Logger.trace("Write operations sync: " + sync);
-
     }
 
     public void stop() throws Exception {
@@ -198,21 +199,20 @@ public class FilesystemStore implements Store {
     public void rebuild(String name) {
         String id = UUID.randomUUID().toString();
         File oldFolder = new File(DATA_PATH, name);
-        File newFolder = new File (DATA_PATH,name+id);
+        File newFolder = new File(DATA_PATH, name + id);
         Class cl = Play.classes.getApplicationClass(name).javaClass;
-        List<JPASupport> objects = (List<JPASupport>) JPA.em().createQuery(
-                "select e from " + cl.getCanonicalName()+ " as e").getResultList();
-        for (JPASupport jpaSupport : objects) {
-            index(jpaSupport,cl.getName()+id);
+        List<JPABase> objects = JPA.em().createQuery("select e from " + cl.getCanonicalName() + " as e").getResultList();
+        for (JPABase jpaBase : objects) {
+            index(jpaBase, cl.getName() + id);
         }
-        //FIXME ensure no other read/writes in here.
+        // FIXME ensure no other read/writes in here.
         try {
             getIndexWriter(cl.getName() + id).flush();
             dirtyReader(cl.getName() + id);
             getIndexSearcher(name).close();
             indexSearchers.remove(name);
             getIndexWriter(name).close();
-            indexWriters.remove (name);
+            indexWriters.remove(name);
             FileUtils.deleteDirectory(oldFolder);
             newFolder.renameTo(oldFolder);
         } catch (IOException e) {
@@ -254,12 +254,12 @@ public class FilesystemStore implements Store {
                 }
             });
             for (File file : indexes) {
-                delete (file.getName());
+                delete(file.getName());
             }
         }
     }
 
     public boolean hasIndex(String name) {
-        return new File(DATA_PATH,name).exists();
+        return new File(DATA_PATH, name).exists();
     }
 }

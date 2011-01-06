@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -48,13 +47,13 @@ public class ConvertionUtils {
                 continue;
             if (field.getType().isArray())
                 continue;
-            if (field.getType().isAssignableFrom(Collection.class))
+            if (Collection.class.isAssignableFrom(field.getType()))
                 continue;
 
             String name = field.getName();
             String value = null;
 
-            if (field.getType().isAssignableFrom(JPASupport.class) && !index.joinField().isEmpty()) {
+            if (JPASupport.class.isAssignableFrom(field.getType()) && !index.joinField().isEmpty()) {
                 JPASupport joinObject = (JPASupport) field.get(object);
                 for (java.lang.reflect.Field joinField : joinObject.getClass().getFields()) {
                     if (joinField.getName().equals(index.joinField())) {

@@ -45,13 +45,13 @@ public class ConvertionUtils {
                 continue;
             if (field.getType().isArray())
                 continue;
-            if (field.getType().isAssignableFrom(Collection.class))
+            if (Collection.class.isAssignableFrom(field.getType()))
                 continue;
 
             String name = field.getName();
             String value = null;
 
-            if (field.getType().isAssignableFrom(JPABase.class) && !(index.joinField().length() == 0)) {
+            if (JPABase.class.isAssignableFrom(field.getType()) && !(index.joinField().length() == 0)) {
                 JPABase joinObject = (JPABase ) field.get(object);
                 for (java.lang.reflect.Field joinField : joinObject.getClass().getFields()) {
                     if (joinField.getName().equals(index.joinField())) {

@@ -1,5 +1,6 @@
 package play.modules.search.store;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import javax.persistence.Id;
@@ -22,7 +23,9 @@ import play.modules.search.Indexed;
  * @author jfp
  */
 public class ConvertionUtils {
-    /**
+    private static final String JAVA_MEMBER_ACCESSOR = ".";
+
+	/**
      * Examines a JPABase object and creates the corresponding Lucene Document
      * 
      * @param object to examine, expected a JPABase object
@@ -35,10 +38,10 @@ public class ConvertionUtils {
             return null;
         if (!(object instanceof JPABase))
             return null;
+
         JPABase jpaBase = (JPABase) object;
-        Document document = new Document();
-        document.add(new Field("_docID", getIdValueFor(jpaBase) + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
-        StringBuffer allValue = new StringBuffer();
+        DocumentBuilder builder = new DocumentBuilder(getIdValueFor(jpaBase) + "");
+
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
             play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
             if (index == null)
@@ -49,33 +52,37 @@ public class ConvertionUtils {
                 continue;
 
             String name = field.getName();
-            String value = null;
-
-            if (JPABase.class.isAssignableFrom(field.getType()) && !(index.joinField().length() == 0)) {
-                JPABase joinObject = (JPABase ) field.get(object);
-                for (java.lang.reflect.Field joinField : joinObject.getClass().getFields()) {
-                    if (joinField.getName().equals(index.joinField())) {
-                        name = joinField.getName();
-                        value = valueOf(joinObject, joinField);
-                    }
-                }
+            if (JPABase.class.isAssignableFrom(field.getType()) && index.joinField().length > 0) {
+                traverseJoinFields(builder, name, "", index, (JPABase ) field.get(object));
             } else {
-                value = valueOf(object, field);
+                builder.addField(name, valueOf(object, field), index);
             }
-
-            if (value == null)
-                continue;
-
-            document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                            index.tokenize() ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED));
-            if (index.tokenize() && index.sortable()) {
-                document.add(new Field(name + "_untokenized", value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                                Field.Index.UN_TOKENIZED));
-            }
-            allValue.append(value).append(' ');
         }
-        document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.TOKENIZED));
-        return document;
+
+        return builder.toDocument();
+    }
+
+    static void traverseJoinFields(DocumentBuilder builder, String indexName, String prefix, play.modules.search.Field index, JPABase object) throws Exception {
+        for (java.lang.reflect.Field field : object.getClass().getFields()) {
+            String name = prefix + field.getName();
+            if (isJoinFieldMatch(index.joinField(), name)) {
+                if (JPABase.class.isAssignableFrom(field.getType())) {
+                    traverseJoinFields(builder, indexName, name + JAVA_MEMBER_ACCESSOR, index, (JPABase ) field.get(object));
+                } else if (Arrays.asList(index.joinField()).contains(name)) {
+                    builder.addField(indexName + JAVA_MEMBER_ACCESSOR + name, valueOf(object, field), index);
+                }
+            }
+        }
+    }
+
+    static boolean isJoinFieldMatch(String[] joinFields, String name) {
+        for (String joinField : joinFields) {
+            if (joinField.equals(name) || joinField.startsWith(name + JAVA_MEMBER_ACCESSOR)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static String valueOf(Object object, java.lang.reflect.Field field) throws Exception {

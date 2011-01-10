@@ -22,10 +22,15 @@ public class Folder extends Model {
     @Field
     @Column(unique=true)
     public Integer poseidonNumber; 
+
     @Field
     public String object;
 
-The **@Field** annotation currently supports only primitive types.
+    @Field(joinField = {"name", "group.name"})
+	@ManyToOne
+	public User owner;
+
+The **@Field** annotation supports indexing fields across joins, as shown in the example above for the **owner** parameter. The searchable fields for this example will be **poseidonNumber**, **object**, **owner.name**, and **owner.group.name**.
 
 h2. <a> Search the objects </a>
 

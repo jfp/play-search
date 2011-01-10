@@ -7,7 +7,6 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 
 import play.Logger;
 import play.data.binding.Binder;
@@ -25,7 +24,7 @@ import play.modules.search.Indexed;
 public class ConvertionUtils {
     private static final String JAVA_MEMBER_ACCESSOR = ".";
 
-	/**
+    /**
      * Examines a JPABase object and creates the corresponding Lucene Document
      * 
      * @param object to examine, expected a JPABase object
@@ -63,12 +62,17 @@ public class ConvertionUtils {
     }
 
     static void traverseJoinFields(DocumentBuilder builder, String indexName, String prefix, play.modules.search.Field index, JPABase object) throws Exception {
+        if (object == null) {
+            return;
+        }
+
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
             String name = prefix + field.getName();
             if (isJoinFieldMatch(index.joinField(), name)) {
                 if (JPABase.class.isAssignableFrom(field.getType())) {
                     traverseJoinFields(builder, indexName, name + JAVA_MEMBER_ACCESSOR, index, (JPABase ) field.get(object));
-                } else if (Arrays.asList(index.joinField()).contains(name)) {
+                }
+                if (Arrays.asList(index.joinField()).contains(name)) {
                     builder.addField(indexName + JAVA_MEMBER_ACCESSOR + name, valueOf(object, field), index);
                 }
             }

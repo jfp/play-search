@@ -14,5 +14,5 @@ public @interface Field {
     boolean stored() default false;
     boolean tokenize() default true;
     boolean sortable() default false;
-    String[] joinField() default "";
+    String[] joinField() default {};
 }

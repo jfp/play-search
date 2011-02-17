@@ -202,13 +202,18 @@ public class FilesystemStore implements Store {
         File newFolder = new File(DATA_PATH, name + id);
         Class cl = Play.classes.getApplicationClass(name).javaClass;
         List<JPABase> objects = JPA.em().createQuery("select e from " + cl.getCanonicalName() + " as e").getResultList();
-        for (JPABase jpaBase : objects) {
-            index(jpaBase, cl.getName() + id);
-        }
-        // FIXME ensure no other read/writes in here.
+        String index = cl.getName() + id;
+        IndexWriter indexWriter = getIndexWriter(index);
         try {
-            getIndexWriter(cl.getName() + id).flush();
-            dirtyReader(cl.getName() + id);
+            for (JPABase jpaBase : objects) {
+                Document document = ConvertionUtils.toDocument(jpaBase);
+                if (document == null)
+                    return;
+                indexWriter.addDocument(document);
+            }
+
+            getIndexWriter(index).flush();
+            dirtyReader(index);
             getIndexSearcher(name).close();
             indexSearchers.remove(name);
             getIndexWriter(name).close();
@@ -216,6 +221,8 @@ public class FilesystemStore implements Store {
             Files.deleteDirectory(oldFolder);
             newFolder.renameTo(oldFolder);
         } catch (IOException e) {
+            throw new UnexpectedException(e);
+        } catch (Exception e) {
             throw new UnexpectedException(e);
         }
     }

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -23,6 +22,7 @@ import play.classloading.ApplicationClasses.ApplicationClass;
 import play.db.jpa.JPA;
 import play.db.jpa.JPABase;
 import play.exceptions.UnexpectedException;
+import play.libs.Files;
 import play.modules.search.Indexed;
 import play.modules.search.Search;
 
@@ -138,7 +138,7 @@ public class FilesystemStore implements Store {
     public void rebuildAllIndexes() throws Exception {
         stop();
         File fl = new File(DATA_PATH);
-        FileUtils.deleteDirectory(fl);
+        Files.deleteDirectory(fl);
         fl.mkdirs();
         List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
@@ -213,7 +213,7 @@ public class FilesystemStore implements Store {
             indexSearchers.remove(name);
             getIndexWriter(name).close();
             indexWriters.remove(name);
-            FileUtils.deleteDirectory(oldFolder);
+            Files.deleteDirectory(oldFolder);
             newFolder.renameTo(oldFolder);
         } catch (IOException e) {
             throw new UnexpectedException(e);
@@ -238,7 +238,7 @@ public class FilesystemStore implements Store {
                 }
                 File target = new File(DATA_PATH, name);
                 if (target.exists() && target.isDirectory())
-                    FileUtils.deleteDirectory(target);
+                    Files.deleteDirectory(target);
             } catch (Exception e) {
                 throw new UnexpectedException("Can't reopen reader", e);
             }

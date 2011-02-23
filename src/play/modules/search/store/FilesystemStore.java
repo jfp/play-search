@@ -13,6 +13,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 
@@ -46,7 +47,7 @@ public class FilesystemStore implements Store {
             String index = object.getClass().getName();
             getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaBase) + ""));
             if (sync) {
-                getIndexWriter(index).flush();
+                getIndexWriter(index).commit();
                 dirtyReader(index);
             }
         } catch (Exception e) {
@@ -67,11 +68,11 @@ public class FilesystemStore implements Store {
             getIndexWriter(index).deleteDocuments(new Term("_docID", ConvertionUtils.getIdValueFor(jpaABase) + ""));
             getIndexWriter(index).addDocument(document);
             if (sync) {
-                getIndexWriter(index).flush();
+                getIndexWriter(index).commit();
                 dirtyReader(index);
             } else {
                 if (getIndexWriter(index).ramSizeInBytes() > 1024 * 1024 * 48) {
-                    getIndexWriter(index).flush();
+                    getIndexWriter(index).commit();
                     dirtyReader(index);
                 }
             }
@@ -87,7 +88,7 @@ public class FilesystemStore implements Store {
                     File root = new File(DATA_PATH, name);
                     if (!root.exists())
                         getIndexWriter(name);
-                    IndexSearcher reader = new IndexSearcher(FSDirectory.getDirectory(root));
+                    IndexSearcher reader = new IndexSearcher(FSDirectory.open(root));
                     indexSearchers.put(name, reader);
                 }
             }
@@ -125,7 +126,7 @@ public class FilesystemStore implements Store {
                         root.mkdirs();
                     if (new File(root, "write.lock").exists())
                         new File(root, "write.lock").delete();
-                    IndexWriter writer = new IndexWriter(FSDirectory.getDirectory(root), true, Search.getAnalyser());
+                    IndexWriter writer = new IndexWriter(FSDirectory.open(root), Search.getAnalyser(), MaxFieldLength.UNLIMITED);
                     indexWriters.put(name, writer);
                 }
             }
@@ -189,7 +190,8 @@ public class FilesystemStore implements Store {
 
     public void optimize(String name) {
         try {
-            getIndexWriter(name).optimize();
+            getIndexWriter(name).optimize(true);
+            getIndexWriter(name).commit();
             dirtyReader(name);
         } catch (Exception e) {
             throw new UnexpectedException(e);
@@ -212,7 +214,7 @@ public class FilesystemStore implements Store {
                 indexWriter.addDocument(document);
             }
 
-            getIndexWriter(index).flush();
+            getIndexWriter(index).commit();
             dirtyReader(index);
             getIndexSearcher(name).close();
             indexSearchers.remove(name);

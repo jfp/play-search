@@ -6,7 +6,7 @@ import play.Play.Mode;
 import play.exceptions.UnexpectedException;
 import play.mvc.Router;
 /**
- * Integrated to Play's lifcycle, SearchPlugin
+ * Integrated to Play's lifecycle, SearchPlugin
  * will trap JPA events and drive the Search
  * service.
  * @author jfp
@@ -15,11 +15,11 @@ import play.mvc.Router;
 public class SearchPlugin extends PlayPlugin {
     
     @Override
-	public void onApplicationStart() {
+    public void onApplicationStart() {
         Search.init();
-	}
+    }
 
-	@Override
+    @Override
     public void onApplicationStop() {
         try {
             Search.shutdown();

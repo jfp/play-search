@@ -37,7 +37,7 @@ public class ConvertionUtils {
             return null;
         JPABase jpaBase = (JPABase) object;
         Document document = new Document();
-        document.add(new Field("_docID", getIdValueFor(jpaBase) + "", Field.Store.YES, Field.Index.UN_TOKENIZED));
+        document.add(new Field("_docID", getIdValueFor(jpaBase) + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
         StringBuffer allValue = new StringBuffer();
         for (java.lang.reflect.Field field : object.getClass().getFields()) {
             play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
@@ -67,14 +67,14 @@ public class ConvertionUtils {
                 continue;
 
             document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                            index.tokenize() ? Field.Index.TOKENIZED : Field.Index.UN_TOKENIZED));
+                            index.tokenize() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED));
             if (index.tokenize() && index.sortable()) {
                 document.add(new Field(name + "_untokenized", value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                                Field.Index.UN_TOKENIZED));
+                                Field.Index.NOT_ANALYZED));
             }
             allValue.append(value).append(' ');
         }
-        document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.TOKENIZED));
+        document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.ANALYZED));
         return document;
     }
 

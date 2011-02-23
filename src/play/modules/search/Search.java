@@ -1,6 +1,7 @@
 package play.modules.search;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.Version;
 
 import play.Logger;
 import play.Play;
@@ -22,6 +23,7 @@ import play.modules.search.store.Store;
  */
 public class Search {
     private static String ANALYSER_CLASS;
+    private static Version LUCENE_VERSION;
     private static Store store;
 
     public static void init() {
@@ -31,6 +33,7 @@ public class Search {
             Logger.error(e, "Error while shutting down search module");
         }
         ANALYSER_CLASS = Play.configuration.getProperty("play.search.analyser", "org.apache.lucene.analysis.standard.StandardAnalyzer");
+        LUCENE_VERSION = Version.valueOf("LUCENE_" + Play.configuration.getProperty("play.search.lucene.version", "30"));
         String storeClassName = Play.configuration.getProperty("play.search.store","play.modules.search.store.FilesystemStore");
         try {
             store = (Store) Class.forName(storeClassName).newInstance();
@@ -43,10 +46,14 @@ public class Search {
     public static Analyzer getAnalyser() {
         try {
             Class clazz = Class.forName(ANALYSER_CLASS);
-            return (Analyzer) clazz.newInstance();
+            return (Analyzer) clazz.getConstructor(Version.class).newInstance(getLuceneVersion());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    public static Version getLuceneVersion() {
+        return LUCENE_VERSION;
     }
 
     public static Store getCurrentStore () {

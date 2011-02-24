@@ -10,7 +10,7 @@ import org.apache.lucene.document.Field;
 
 import play.Logger;
 import play.data.binding.Binder;
-import play.db.jpa.FileAttachment;
+import play.db.jpa.Blob;
 import play.db.jpa.JPABase;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
@@ -82,8 +82,8 @@ public class ConvertionUtils {
         if (field.getType().equals(String.class)) {
             return (String ) field.get(object);
         }
-        if (field.getType().equals(FileAttachment.class) && field.get(object) != null) {
-            return FileExtractor.getText((FileAttachment ) field.get(object));
+        if (field.getType().equals(Blob.class) && field.get(object) != null) {
+            return FileExtractor.getText((Blob) field.get(object));
         }
 
         Object o = field.get(object);
@@ -103,9 +103,9 @@ public class ConvertionUtils {
      * @param indexValue String value of the id, taken from index
      * @return Object id expected to build query
      */
-    public static Object getIdValueFromIndex(Class clazz, String indexValue) {
+    public static Object getIdValueFromIndex(Class<?> clazz, String indexValue) {
         java.lang.reflect.Field field = getIdField(clazz);
-        Class parameter = field.getType();
+        Class<?> parameter = field.getType();
         try {
             return Binder.directBind(indexValue, parameter);
         } catch (Exception e) {
@@ -119,7 +119,7 @@ public class ConvertionUtils {
      * @param clazz JPABase target class
      * @return corresponding field
      */
-    public static java.lang.reflect.Field getIdField(Class clazz) {
+    public static java.lang.reflect.Field getIdField(Class<?> clazz) {
         for (java.lang.reflect.Field field : clazz.getFields()) {
             if (field.getAnnotation(Id.class) != null) {
                 return field;
@@ -152,7 +152,7 @@ public class ConvertionUtils {
         return val;
     }
 
-    public static boolean isForcedUntokenized(Class clazz, String fieldName) {
+    public static boolean isForcedUntokenized(Class<?> clazz, String fieldName) {
         try {
             java.lang.reflect.Field field = clazz.getField(fieldName);
             play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);

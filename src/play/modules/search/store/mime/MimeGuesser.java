@@ -1,7 +1,7 @@
 package play.modules.search.store.mime;
 
-import play.db.jpa.FileAttachment;
+import play.db.jpa.Blob;
 
 public interface MimeGuesser {
-    public String guess (FileAttachment file);
+    public String guess (Blob blob);
 }

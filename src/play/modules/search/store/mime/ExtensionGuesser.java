@@ -3,7 +3,7 @@ package play.modules.search.store.mime;
 import java.util.HashMap;
 import java.util.Map;
 
-import play.db.jpa.FileAttachment;
+import play.db.jpa.Blob;
 
 public class ExtensionGuesser implements MimeGuesser {
     public static Map<String, String> extensions = new HashMap<String, String> ();
@@ -11,12 +11,10 @@ public class ExtensionGuesser implements MimeGuesser {
         extensions.put("pdf", "application/pdf");
         //FIXME: complete
     }
-    public String guess (FileAttachment file) {
-        if (file == null || file.filename == null) {
-            return null;
-        }
-        String extension = file.filename.substring(file.filename.lastIndexOf('.')+1);
-        return extensions.get(extension);
-    }
     
+    public String guess (Blob blob) {
+        if(blob != null)
+            return blob.type();
+        return null;
+    }
 }

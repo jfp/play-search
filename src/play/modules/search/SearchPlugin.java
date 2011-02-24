@@ -4,6 +4,7 @@ import play.Play;
 import play.PlayPlugin;
 import play.Play.Mode;
 import play.exceptions.UnexpectedException;
+import play.modules.search.store.FileExtractor;
 import play.mvc.Router;
 /**
  * Integrated to Play's lifecycle, SearchPlugin
@@ -17,6 +18,7 @@ public class SearchPlugin extends PlayPlugin {
     @Override
     public void onApplicationStart() {
         Search.init();
+        FileExtractor.init();
     }
 
     @Override

@@ -45,8 +45,8 @@ public class Search {
 
     public static Analyzer getAnalyser() {
         try {
-            Class clazz = Class.forName(ANALYSER_CLASS);
-            return (Analyzer) clazz.getConstructor(Version.class).newInstance(getLuceneVersion());
+            Class<Analyzer> clazz = (Class<Analyzer>) Class.forName(ANALYSER_CLASS);
+            return clazz.getConstructor(Version.class).newInstance(getLuceneVersion());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

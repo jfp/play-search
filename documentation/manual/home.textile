@@ -6,6 +6,11 @@ h2. <a> Version </a>
 
 Search module versions 2.x require playframework version 1.1.
 
+h2. <a> What's new </a>
+
+ * Upgrade to lucene 3.x (you have to rebuild your indexes if using a previous version)
+ * Web console on /@search
+
 h2. <a> Enable the module</a>
 
 In the **/conf/application.conf** file, enable the Search module by adding this line: 

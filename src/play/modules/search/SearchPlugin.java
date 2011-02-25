@@ -2,7 +2,6 @@ package play.modules.search;
 
 import play.Play;
 import play.PlayPlugin;
-import play.Play.Mode;
 import play.exceptions.UnexpectedException;
 import play.modules.search.store.FileExtractor;
 import play.mvc.Router;
@@ -43,7 +42,7 @@ public class SearchPlugin extends PlayPlugin {
     
     @Override
     public void onRoutesLoaded() {
-        if (Play.mode == Mode.DEV) {
+        if (Play.configuration.contains("play.search.password" ) || Play.mode == Play.Mode.DEV) {
             Router.addRoute("GET", "/@search/?", "modules.search.Administration.index");
             Router.addRoute("GET", "/@search/optimize/{name}", "modules.search.Administration.optimize");
             Router.addRoute("GET", "/@search/reindex/{name}", "modules.search.Administration.reindex");

@@ -70,6 +70,12 @@ or
 
 bc. play.search.reindex=true
 
+h2. <a> Embedded console </a>
+
+There is an embedded console exposed at /@search . It is turned on in dev mode with default password "search" (without quotes), and only available in production mode if you have set a password in your configuration file :
+
+bc. play.search.password=mysecretpassword
+
 In your conf/application.conf. Don't forget to remove it after!
 
 Since version 1.1, the create/update/delete of a JPA object is synchronous. It means that once you made a change to an object, the corresponding reader will automaticly be re-opened to reflect the changes. This behaviour should be ok most of the time, but should you want to increase performances, like for large updates, you could use the property 

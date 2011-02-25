@@ -26,21 +26,21 @@ import play.modules.search.store.Store;
 public class Query {
     private Class<JPABase> clazz;
 
-    private String query;
+    protected String query;
 
-    private Store store;
+    protected Store store;
 
-    private String[] order = new String[0];
+    protected String[] order = new String[0];
 
-    private int offset = 0;
+    protected int offset = 0;
 
-    private int pageSize = 10;
+    protected int pageSize = 10;
 
-    private boolean reverse = false;
+    protected boolean reverse = false;
 
-    private IndexSearcher indexSearcher;
+    protected IndexSearcher indexSearcher;
     
-    private TopDocs topDocs = null;
+    protected TopDocs topDocs = null;
 
     protected Query(String query, Class<JPABase> clazz, Store store) {
         this.query = query;

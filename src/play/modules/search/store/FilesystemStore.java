@@ -29,9 +29,9 @@ import play.modules.search.Search;
 
 public class FilesystemStore implements Store {
 
-    private Map<String, IndexWriter> indexWriters = new HashMap<String, IndexWriter>();
+    protected Map<String, IndexWriter> indexWriters = new HashMap<String, IndexWriter>();
 
-    private Map<String, IndexSearcher> indexSearchers = new HashMap<String, IndexSearcher>();
+    protected Map<String, IndexSearcher> indexSearchers = new HashMap<String, IndexSearcher>();
 
     public static String DATA_PATH;
 

@@ -89,6 +89,7 @@ public class FilesystemStore implements Store {
                     if (!root.exists())
                         getIndexWriter(name);
                     IndexSearcher reader = new IndexSearcher(FSDirectory.open(root));
+                    reader.setDefaultFieldSortScoring(true, true);
                     indexSearchers.put(name, reader);
                 }
             }

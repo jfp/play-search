@@ -73,17 +73,17 @@ public class Query {
         return this;
     }
 
-    private Sort getSort() {
+    private Sort getSort() throws SearchException {
         Sort sort = new Sort();
         if (order.length > 0) {
             if (reverse) {
                 if (order.length != 1)
                     throw new SearchException("reverse can be used while sorting only one field with oderBy");
-                sort.setSort(new SortField(order[0], SortField.SCORE, true));
+                sort.setSort(new SortField(order[0], ConvertionUtils.getSortType(clazz, order[0]), true));
             } else {
                 SortField[] fields = new SortField[order.length];
                 for (int i = 0; i < fields.length; i++) {
-                    fields[i] = new SortField(order[i], SortField.SCORE);
+                    fields[i] = new SortField(order[i], ConvertionUtils.getSortType(clazz, order[i]));
                 }
                 sort.setSort(fields);
             }

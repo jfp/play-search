@@ -1,12 +1,12 @@
 package play.modules.search.store;
 
 import java.util.Collection;
-
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.SortField;
 
 import play.Logger;
 import play.data.binding.Binder;
@@ -15,6 +15,7 @@ import play.db.jpa.JPABase;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
 import play.modules.search.Indexed;
+import play.modules.search.Query.SearchException;
 
 /**
  * Various utils handling object to index and query result to object conversion
@@ -94,6 +95,23 @@ public class ConvertionUtils {
         return "" + field.get(object);
     }
 
+    public static int getSortType (Class clazz, String field) throws SearchException {
+        java.lang.reflect.Field fi;
+        try {
+            fi = clazz.getField(field);
+        } catch (Exception e) {
+            throw new SearchException("The field "+field+" is not found on class "+clazz);
+        }
+        Class type = fi.getType();
+        if (type.equals(long.class) || type.equals(Long.class)) return SortField.LONG;
+        if (type.equals(int.class) || type.equals(Integer.class)) return SortField.INT;
+        if (type.equals(double.class) || type.equals(Double.class)) return SortField.DOUBLE;
+        if (type.equals(float.class) || type.equals(Float.class)) return SortField.FLOAT;
+        if (type.equals(short.class) || type.equals(Short.class)) return SortField.SHORT;
+        if (type.equals(byte.class) ||type.equals(Byte.class)) return SortField.BYTE;
+        return SortField.SCORE;
+    }
+    
     /**
      * Looks for the type of the id fiels on the JPABase target class and use
      * play's binder to retrieve the corresponding object used to build JPA load

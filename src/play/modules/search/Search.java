@@ -43,12 +43,23 @@ public class Search {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static Analyzer getAnalyser() {
+        Class<Analyzer> clazz = null;
         try {
-            Class<Analyzer> clazz = (Class<Analyzer>) Class.forName(ANALYSER_CLASS);
-            return clazz.getConstructor(Version.class).newInstance(getLuceneVersion());
+            clazz = (Class<Analyzer>) Class.forName(ANALYSER_CLASS);
+        } catch (ClassNotFoundException e) {
+            throw new UnexpectedException("The analyzer class '" + ANALYSER_CLASS + "' could not be found!", e);
+        }
+        try {
+            try {
+                return clazz.getConstructor(Version.class).newInstance(getLuceneVersion());
+            } catch (NoSuchMethodException e) {
+                Logger.debug("getAnalyser(): not versioned constructor for class '%s', trying default constructor...", ANALYSER_CLASS);
+                return clazz.getConstructor().newInstance();
+            }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new UnexpectedException("The analyzer class '" + ANALYSER_CLASS + "' could not be instanciated!", e);
         }
     }
     
@@ -60,6 +71,7 @@ public class Search {
         return store;
     }
     
+    @SuppressWarnings("unchecked")
     public static Query search(String query, Class clazz) {
         return new Query(query, clazz, store);
     }

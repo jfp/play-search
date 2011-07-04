@@ -6,7 +6,7 @@ import play.jobs.OnApplicationStart;
 import play.modules.search.Search;
 
 @OnApplicationStart
-public class SearchReindexJob extends Job {
+public class SearchReindexJob extends Job<Void> {
     
     public void doJob() throws Exception {
         if(Boolean.parseBoolean(Play.configuration.getProperty("play.search.reindex","false"))

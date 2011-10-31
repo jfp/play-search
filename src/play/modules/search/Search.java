@@ -5,6 +5,7 @@ import org.apache.lucene.util.Version;
 
 import play.Logger;
 import play.Play;
+import play.classloading.ApplicationClassloader;
 import play.exceptions.UnexpectedException;
 import play.modules.search.store.Store;
 
@@ -47,7 +48,7 @@ public class Search {
     public static Analyzer getAnalyser() {
         Class<Analyzer> clazz = null;
         try {
-            clazz = (Class<Analyzer>) Class.forName(ANALYSER_CLASS);
+            clazz = (Class<Analyzer>) Play.classloader.loadClass(ANALYSER_CLASS);
         } catch (ClassNotFoundException e) {
             throw new UnexpectedException("The analyzer class '" + ANALYSER_CLASS + "' could not be found!", e);
         }

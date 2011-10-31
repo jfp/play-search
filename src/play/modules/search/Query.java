@@ -146,8 +146,9 @@ public class Query {
     public List<QueryResult> executeQuery(boolean fetch) throws SearchException {
         try {
             if (topDocs == null) {
+                String defaultField = Play.configuration.getProperty("play.search.defaultSearchField", "allfield");
                 org.apache.lucene.search.Query luceneQuery =
-                                new QueryParser(Search.getLuceneVersion(), "_docID", Search.getAnalyser()).parse(query);
+                                new QueryParser(Search.getLuceneVersion(), defaultField, Search.getAnalyser()).parse(query);
                 BooleanQuery.setMaxClauseCount(Integer.parseInt(Play.configuration.getProperty(
                                 "play.search.maxClauseCount", "1024")));
                 topDocs = indexSearcher.search(luceneQuery, null, Integer.MAX_VALUE, getSort());

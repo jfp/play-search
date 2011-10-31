@@ -96,10 +96,12 @@ You can use the following properties in your conf/application.conf file:
 bc. play.search.path=/tmp/myDevApplication
 play.search.analyser=org.apache.lucene.analysis.standard.StandardAnalyzer
 play.search.lucene.version=30
+play.search.defaultSearchField=allfield
 
 **play.search.path** is where the module stores its indexes
 **play.search.analyser** is the lucene analyzer class used for indexation.
 **play.search.lucene.version** is the lucene's version (for compatibility mode). Default: 30
+**play.search.defaultSearchField** is the default field name used when parsing queries. Default : allfield (special field containing all other fields)
 
 h3. <a> Lucene Version </a>
 

@@ -144,12 +144,7 @@ public class FilesystemStore implements Store {
         fl.mkdirs();
         List<ApplicationClass> classes = Play.classes.getAnnotatedClasses(Indexed.class);
         for (ApplicationClass applicationClass : classes) {
-            List<JPABase> objects = JPA.em().createQuery(
-                                            "select e from " + applicationClass.javaClass.getCanonicalName() + " as e")
-                                            .getResultList();
-            for (JPABase jpaBase : objects) {
-                index(jpaBase, applicationClass.javaClass.getName());
-            }
+            rebuild(applicationClass.javaClass.getName());
         }
         Logger.info("Rebuild index finished");
     }

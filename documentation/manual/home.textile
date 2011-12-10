@@ -83,6 +83,16 @@ bc. play.search.password=mysecretpassword
 
 In your conf/application.conf. Don't forget to remove it after!
 
+Here are all the configuration keys you can tweak related to the console :
+
+bc. play.search.login=search
+play.search.password=search
+play.search.auth.method=http
+
+**play.search.login** Login used to authenticate on the console. Default is search
+**play.search.password** Password  used to authenticate on the console. Default is search
+**play.search.auth.method** Authentication method to access console. http|session
+
 Since version 1.1, the create/update/delete of a JPA object is synchronous. It means that once you made a change to an object, the corresponding reader will automaticly be re-opened to reflect the changes. This behaviour should be ok most of the time, but should you want to increase performances, like for large updates, you could use the property 
 
 bc. play.search.synch=false

@@ -1,0 +1,17 @@
+#{extends 'modules/search/layout.html'/}
+
+<h1>Please provide your credentials :</h1>
+<form action="@@{checkAuth}" method="post">
+<dl>
+    <dt>Login:</dt>
+    <dd><input type="text" name="login" />
+</dl>
+<dl>
+    <dt>Password:</dt>
+    <dd><input type="password" name="password" />
+</dl>
+<dl>
+    <dt></dt>
+    <dd><input type="submit" />
+</dl>
+</form>

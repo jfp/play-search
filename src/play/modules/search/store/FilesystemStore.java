@@ -217,7 +217,7 @@ public class FilesystemStore implements Store {
             getIndexWriter(name).close();
             indexWriters.remove(name);
             Files.deleteDirectory(oldFolder);
-            newFolder.renameTo(oldFolder);
+            newFolder.renameTo(oldFolder);  //this line always return false...
         } catch (IOException e) {
             throw new UnexpectedException(e);
         } catch (Exception e) {

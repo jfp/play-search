@@ -211,6 +211,8 @@ public class FilesystemStore implements Store {
             }
 
             getIndexWriter(index).commit();
+            getIndexWriter(index).close();
+            indexWriters.remove(index);
             dirtyReader(index);
             getIndexSearcher(name).close();
             indexSearchers.remove(name);

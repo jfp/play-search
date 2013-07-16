@@ -107,11 +107,13 @@ bc. play.search.path=/tmp/myDevApplication
 play.search.analyser=org.apache.lucene.analysis.standard.StandardAnalyzer
 play.search.lucene.version=30
 play.search.defaultSearchField=allfield
+play.search.allowLeadingWildcard=false
 
 **play.search.path** is where the module stores its indexes
 **play.search.analyser** is the lucene analyzer class used for indexation.
 **play.search.lucene.version** is the lucene's version (for compatibility mode). Default: 30
 **play.search.defaultSearchField** is the default field name used when parsing queries. Default : allfield (special field containing all other fields)
+**play.search.allowLeadingWildcard** When set to true, * or ? are allowed as the first character of a query. Note that this can produce very slow queries on big indexes. Default: false
 
 h3. <a> Lucene Version </a>
 

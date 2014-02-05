@@ -100,7 +100,7 @@ public class Query {
     @SuppressWarnings("unchecked")
     public <T extends JPABase> List<T> fetch() throws SearchException {
         try {
-            List<QueryResult> results = executeQuery(true);
+            List<QueryResult> results = executeQuery(true,false);
             List<JPABase> objects = new ArrayList<JPABase>();
             for (QueryResult queryResult : results) {
                 objects.add(queryResult.object);
@@ -111,9 +111,23 @@ public class Query {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public <T extends JPABase> List<T> fetchFromIndex() throws SearchException {
+        try {
+            List<QueryResult> results = executeQuery(false,true);
+            List<JPABase> objects = new ArrayList<JPABase>();
+            for (QueryResult queryResult : results) {
+                objects.add(queryResult.object);
+            }
+            return (List<T>) objects;
+        } catch (Exception e) {
+            throw new UnexpectedException(e);
+        }
+    }
+    
     public List<Long> fetchIds() throws SearchException {
         try {
-            List<QueryResult> results = executeQuery(false);
+            List<QueryResult> results = executeQuery(false,false);
             List<Long> objects = new ArrayList<Long>();
             for (QueryResult queryResult : results) {
                 objects.add(Long.parseLong(queryResult.id));
@@ -143,7 +157,7 @@ public class Query {
      *            Object
      * @return
      */
-    public List<QueryResult> executeQuery(boolean fetch) throws SearchException {
+    public List<QueryResult> executeQuery(boolean fetch,boolean fromIndex) throws SearchException {
         try {
             if (topDocs == null) {
                 String defaultField = Play.configuration.getProperty("play.search.defaultSearchField", "allfield");
@@ -167,6 +181,19 @@ public class Query {
                     QueryResult qresult = new QueryResult();
                     qresult.score = topDocs.scoreDocs[i].score;
                     qresult.id = indexSearcher.doc(topDocs.scoreDocs[i].doc).get("_docID");
+                    
+                    if (fromIndex){
+                    	qresult.object=clazz.newInstance();
+                    	for (java.lang.reflect.Field field : clazz.getFields()) {
+                    		 play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
+                    		 if (index!=null && index.stored()){
+                    			 field.setAccessible(true);
+                    			 String value=indexSearcher.doc(topDocs.scoreDocs[i].doc).get(field.getName());
+                    			 field.set(qresult.object,value);
+                    		 }
+                    	}
+                    }
+                    
                     if (fetch) {
                         Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
                         qresult.object = (JPABase)JPA.em().find(clazz, objectId);
@@ -180,6 +207,18 @@ public class Query {
                     QueryResult qresult = new QueryResult();
                     qresult.score = topDocs.scoreDocs[i].score;
                     qresult.id = indexSearcher.doc(topDocs.scoreDocs[i].doc).get("_docID");
+                    if (fromIndex){
+                    	qresult.object=clazz.newInstance();
+                    	for (java.lang.reflect.Field field : clazz.getFields()) {
+                    		 play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
+                    		 if (index!=null && index.stored()){
+                    			 field.setAccessible(true);
+                    			 String value=indexSearcher.doc(topDocs.scoreDocs[i].doc).get(field.getName());
+                    			 field.set(qresult.object,value);
+                    		 }
+                    	}
+                    }
+                    
                     if (fetch) {
                         Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
                         qresult.object = (JPABase)JPA.em().find(clazz, objectId);
